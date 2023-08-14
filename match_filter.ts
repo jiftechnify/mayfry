@@ -34,7 +34,7 @@ const matchWithTagQuery = (
   ev: NostrEvent,
   f: Filter
 ): boolean => {
-  const tagQueryKeys = Object.keys(f).filter(isTagNameInFilter)
+  const tagQueryKeys = Object.keys(f).filter(isTagQueryKey)
   if (tagQueryKeys.length === 0) {
     // fast path: filter doesn't have any tag queries
     return true
@@ -55,6 +55,7 @@ const matchWithTagQuery = (
 // )
 const getTagValuesByName = (ev: NostrEvent, tagName: string): Set<string> => new Set(ev.tags.filter(t => t[0] === tagName).map(t => t[1] ?? ""))
 
-const isTagNameInFilter = (s: string): s is TagName => {
+// checks if `s` has the pattern of tag query key (e.g. "#" + single letter)
+const isTagQueryKey = (s: string): s is TagName => {
   return s.startsWith("#") && s.length === 2
 }
