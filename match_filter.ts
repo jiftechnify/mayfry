@@ -1,3 +1,4 @@
+import { TagName } from "npm:nostr-typedef@0.4.0";
 import { Filter, NostrEvent } from "./deps.ts";
 
 const matchEvent = (
@@ -33,6 +34,27 @@ const matchWithTagQuery = (
   ev: NostrEvent,
   f: Filter
 ): boolean => {
-  // TODO
-  return true
+  const tagQueryKeys = Object.keys(f).filter(isTagNameInFilter)
+  if (tagQueryKeys.length === 0) {
+    // fast path: filter doesn't have any tag queries
+    return true
+  }
+
+  return tagQueryKeys.every(tqk => {
+    const tagVals = getTagValuesByName(ev, tqk.charAt(1))
+    const queryVals = f[tqk] as string[];
+    return queryVals.some(qv => tagVals.has(qv))
+  })
+}
+
+// if `ev` has tags: [["e", "abcd"], ["p", "dcba"], ["e", "1234"], ["p", "4321"]] 
+// result will be:
+// Map (
+//   "e" -> Set("abcd", "1234"),
+//   "p" -> Set("dcba", "4321"),
+// )
+const getTagValuesByName = (ev: NostrEvent, tagName: string): Set<string> => new Set(ev.tags.filter(t => t[0] === tagName).map(t => t[1] ?? ""))
+
+const isTagNameInFilter = (s: string): s is TagName => {
+  return s.startsWith("#") && s.length === 2
 }
