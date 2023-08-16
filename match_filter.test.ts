@@ -1,6 +1,6 @@
 import { Filter } from "./deps.ts";
 import { assert } from "./dev_deps.ts";
-import { matchEventWithFilter } from "./match_filter.ts";
+import { matchEventWithFilter, matchEventWithFilters } from "./match_filter.ts";
 
 const ev = {
   id: "id1",
@@ -149,5 +149,31 @@ Deno.test("matchEventWithFilter", async (t) => {
 
   await t.step("should ignore malformed tag query", () => {
     assert(matchEventWithFilter(ev, { "#multi-letter": ["foo", "bar"] }));
+  });
+});
+
+Deno.test("matchEventWithFilters", async (t) => {
+  await t.step("should return true if at least one filter matches", () => {
+    assert(
+      matchEventWithFilters(ev, [
+        { ids: ["id2"] },
+        { kinds: [2] },
+        { "#a": ["a1"] },
+        { since: 1630000000 },
+        { authors: ["pk1"] }, // matches
+      ])
+    );
+  });
+
+  await t.step("should return false if no filters match", () => {
+    assert(
+      !matchEventWithFilters(ev, [
+        { ids: ["id2"] },
+        { kinds: [2] },
+        { "#a": ["a1"] },
+        { since: 1630000000 },
+        { authors: ["pk2"] },
+      ])
+    );
   });
 });

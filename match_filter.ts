@@ -26,6 +26,11 @@ export const matchEventWithFilter = (ev: NostrEvent, f: Filter): boolean => {
   return true;
 };
 
+export const matchEventWithFilters = (
+  ev: NostrEvent,
+  filters: Filter[]
+): boolean => filters.some((f) => matchEventWithFilter(ev, f));
+
 const matchWithTagQuery = (ev: NostrEvent, f: Filter): boolean => {
   const tagQueryKeys = Object.keys(f).filter(isTagQueryKey);
   if (tagQueryKeys.length === 0) {
