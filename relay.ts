@@ -186,13 +186,13 @@ const parseMessage = (s: string): Result<C2RMessage, ParseMessageError> => {
       return Result.ok(parsed as C2RMessage);
     }
     case "REQ": {
-      if (parsed.length !== 3) {
+      if (parsed.length < 3) {
         return Result.err({ err: "malformed" });
       }
       if (typeof parsed[1] !== "string") {
         return Result.err({ err: "malformed" });
       }
-      if (!isRecord(parsed[2])) {
+      if (parsed.slice(2).some(f => !isRecord(f))) {
         return Result.err({ err: "malformed" });
       }
       return Result.ok(parsed as C2RMessage);
