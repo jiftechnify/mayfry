@@ -1,4 +1,5 @@
-import { Filter, NostrEvent, TagQueryKey } from "./deps.ts";
+import { Filter, TagQueryKey } from "./deps.ts";
+import { NostrEvent } from "./types.ts";
 
 export const matchEventWithFilter = (ev: NostrEvent, f: Filter): boolean => {
   // TODO: use Set to reduce complexity

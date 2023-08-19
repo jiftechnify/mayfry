@@ -1,3 +1,16 @@
+/**
+ * The data structure of Nostr event.
+ */
+export type NostrEvent = {
+  id: string;
+  pubkey: string;
+  created_at: number;
+  kind: number;
+  tags: string[][];
+  content: string;
+  sig: string;
+};
+
 export type Result<T, E> =
   | {
       isOk: true;
