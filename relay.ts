@@ -75,23 +75,20 @@ class RelaySocket {
       const parseRes = parseC2RMessage(ev.data);
       if (!parseRes.isOk) {
         console.error("failed to parse message from client", parseRes.err);
-        
-        let notice: string
+
+        let notice: string;
         switch (parseRes.err.err) {
-          case 'malformed':
-            notice = "malformed client to relay message"
+          case "malformed":
+            notice = "malformed client to relay message";
             break;
-          case 'unsupported':
-            notice = `message type ${parseRes.err.msgType} is not supported by this relay`
+          case "unsupported":
+            notice = `message type ${parseRes.err.msgType} is not supported by this relay`;
             break;
         }
-        this.sendR2CMsg([
-          "NOTICE",
-          notice
-        ])
+        this.sendR2CMsg(["NOTICE", notice]);
         return;
       }
-      
+
       switch (parseRes.val[0]) {
         case "EVENT": {
           const [, ev] = parseRes.val;
@@ -117,23 +114,21 @@ class RelaySocket {
             return;
           }
 
-          this.#server.broadcastEvent(this, ev as unknown as NostrEvent);
+          this.#server.broadcastEvent(this, ev);
           this.sendR2CMsg(["OK", ev.id, true]);
           break;
         }
         case "REQ": {
-          const [, subId, ...filters] = parseRes.val;
-          // TODO: validate format
-
           // start subscription
+          const [, subId, ...filters] = parseRes.val;
           console.log(
             `opening subscription. remote addr: ${
               this.#remoteAddr
             }, id: ${subId}`
           );
-          this.#subs.set(subId, filters as unknown as Filter[]);
+          this.#subs.set(subId, filters);
 
-          // return EOSE immediately since this relay dosen't sore any events
+          // return EOSE immediately since this relay dosen't store any events
           this.sendR2CMsg(["EOSE", subId]);
           break;
         }
@@ -182,7 +177,7 @@ const isSupportedC2RMsgName = (
 
 type C2RMessage =
   | [type: "EVENT", ev: NostrEvent]
-  | [type: "REQ", subId: string, ...filters: Record<string, unknown>[]]
+  | [type: "REQ", subId: string, ...filters: Filter[]]
   | [type: "CLOSE", subId: string];
 
 type ParseC2RMessageError =
@@ -231,7 +226,7 @@ const parseC2RMessage = (
       if (typeof parsed[1] !== "string") {
         return Result.err({ err: "malformed" });
       }
-      if (parsed.slice(2).some((f) => !isRecord(f))) {
+      if (parsed.slice(2).some((f) => !isReqFilter(f))) {
         return Result.err({ err: "malformed" });
       }
       return Result.ok(parsed as C2RMessage);
@@ -260,9 +255,7 @@ const is64BytesHexStr = (s: string): boolean => {
 };
 
 // schema validation for Nostr events
-export const isNostrEvent = (
-  rawEv: Record<string, unknown>
-): rawEv is NostrEvent => {
+const isNostrEvent = (rawEv: Record<string, unknown>): rawEv is NostrEvent => {
   // id: 32-bytes lowercase hex-encoded sha256
   if (
     !("id" in rawEv) ||
@@ -320,14 +313,44 @@ export const isNostrEvent = (
   return true;
 };
 
+const isReqFilter = (raw: Record<string, unknown>): raw is Filter => {
+  if ("ids" in raw && !Array.isArray(raw.ids)) {
+    return false;
+  }
+  if ("kinds" in raw && !Array.isArray(raw.kinds)) {
+    return false;
+  }
+  if ("authors" in raw && !Array.isArray(raw.authors)) {
+    return false;
+  }
+  if ("since" in raw && typeof raw.since !== "number") {
+    return false;
+  }
+  if ("until" in raw && typeof raw.until !== "number") {
+    return false;
+  }
+  if ("limit" in raw && typeof raw.limit !== "number") {
+    return false;
+  }
+  if ("search" in raw && typeof raw.search !== "string") {
+    return false;
+  }
+  for (const tqk of Object.keys(raw).filter(
+    (k) => k.startsWith("#") && k.length === 2
+  )) {
+    if (!Array.isArray(raw[tqk])) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 type R2CMessage =
   | [type: "EVENT", subId: string, ev: NostrEvent]
   | [type: "OK", evId: string, accepted: boolean, msg?: string]
   | [type: "EOSE", subId: string]
   | [type: "NOTICE", msg: string];
-
-const isRecord = (x: unknown): x is Record<string, unknown> =>
-  typeof x === "object" && !Array.isArray(x);
 
 const addrToString = (addr: Deno.Addr): string => {
   switch (addr.transport) {
