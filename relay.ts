@@ -3,7 +3,17 @@ import { NostrEvent, isEphemeralEvent, isNostrEvent } from "./event.ts";
 import { isReqFilter, matchEventWithFilters } from "./filter.ts";
 import { Result } from "./types.ts";
 
-export const launchRelay = async () => {
+type RelayConfig = {
+  hostname?: string;
+  port?: number;
+};
+const defaultRelayConfig: Required<RelayConfig> = {
+  hostname: "0.0.0.0",
+  port: 20080,
+};
+
+export const launchRelay = async (rawConfig: RelayConfig = {}) => {
+  const config = { ...rawConfig, ...defaultRelayConfig };
   const relayServer = new RelayServer();
 
   const handleConn = async (conn: Deno.Conn) => {
@@ -18,9 +28,8 @@ export const launchRelay = async () => {
     }
   };
 
-  // TODO: make configurable the port to listen
-  console.log("relay listening on :8081...");
-  const tcpServer = Deno.listen({ port: 8081 });
+  console.log(`listening on ${config.hostname}:${config.port}...`);
+  const tcpServer = Deno.listen(config);
   for await (const conn of tcpServer) {
     handleConn(conn);
   }
