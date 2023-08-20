@@ -24,7 +24,7 @@ const is64BytesHexStr = (s: string): boolean => {
 
 // schema validation for Nostr events
 export const isNostrEvent = (
-  rawEv: Record<string, unknown>
+  rawEv: Record<string, unknown>,
 ): rawEv is NostrEvent => {
   // id: 32-bytes lowercase hex-encoded sha256
   if (
@@ -60,7 +60,7 @@ export const isNostrEvent = (
   }
   if (
     rawEv["tags"].some(
-      (tag) => !Array.isArray(tag) || tag.some((e) => typeof e !== "string")
+      (tag) => !Array.isArray(tag) || tag.some((e) => typeof e !== "string"),
     )
   ) {
     return false;
@@ -83,5 +83,4 @@ export const isNostrEvent = (
   return true;
 };
 
-export const isEphemeralEvent = (ev: NostrEvent): boolean =>
-  20000 <= ev.kind && ev.kind < 30000;
+export const isEphemeralEvent = (ev: NostrEvent): boolean => 20000 <= ev.kind && ev.kind < 30000;

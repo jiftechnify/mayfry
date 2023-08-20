@@ -1,14 +1,12 @@
-
-
 export type Result<T, E> =
   | {
-      isOk: true;
-      val: T;
-    }
+    isOk: true;
+    val: T;
+  }
   | {
-      isOk: false;
-      err: E;
-    };
+    isOk: false;
+    err: E;
+  };
 
 export const Result = {
   ok<T>(val: T): Result<T, never> {

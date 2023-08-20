@@ -1,5 +1,5 @@
 import { Filter, ToRelayMessage, verifyEventSignature } from "./deps.ts";
-import { NostrEvent, isEphemeralEvent, isNostrEvent } from "./event.ts";
+import { isEphemeralEvent, isNostrEvent, NostrEvent } from "./event.ts";
 import { isReqFilter, matchEventWithFilters } from "./filter.ts";
 import { Result } from "./types.ts";
 
@@ -47,13 +47,13 @@ export class RelayServer {
     });
     ws.addEventListener("close", (ev) => {
       console.log(
-        `websocket closed. remote addr: ${strAddr}, code: ${ev.code}, reason: ${ev.reason}`
+        `websocket closed. remote addr: ${strAddr}, code: ${ev.code}, reason: ${ev.reason}`,
       );
       this.#sockets.delete(rs);
     });
     ws.addEventListener("error", (ev) => {
       console.log(
-        `websocket error. remote addr: ${strAddr}, error: ${JSON.stringify(ev)}`
+        `websocket error. remote addr: ${strAddr}, error: ${JSON.stringify(ev)}`,
       );
     });
 
@@ -132,9 +132,7 @@ class RelaySocket {
           // start subscription
           const [, subId, ...filters] = parseRes.val;
           console.log(
-            `opening subscription. remote addr: ${
-              this.#remoteAddr
-            }, id: ${subId}`
+            `opening subscription. remote addr: ${this.#remoteAddr}, id: ${subId}`,
           );
           this.#subs.set(subId, filters);
 
@@ -146,9 +144,7 @@ class RelaySocket {
           const [, subId] = parseRes.val;
           // TODO: should send NOTICE if there is no subscription of specified id?
           console.log(
-            `closing subscription. remote addr: ${
-              this.#remoteAddr
-            }, id: ${subId}`
+            `closing subscription. remote addr: ${this.#remoteAddr}, id: ${subId}`,
           );
           this.#subs.delete(subId);
           break;
@@ -178,12 +174,11 @@ const c2rMsgNames: ToRelayMessage.Type[] = [
   "AUTH",
   "COUNT",
 ];
-const isC2RMsgName = (s: string): s is ToRelayMessage.Type =>
-  (c2rMsgNames as string[]).includes(s);
+const isC2RMsgName = (s: string): s is ToRelayMessage.Type => (c2rMsgNames as string[]).includes(s);
 
 const supportedC2RMsgNames = ["EVENT", "REQ", "CLOSE"];
 const isSupportedC2RMsgName = (
-  s: ToRelayMessage.Type
+  s: ToRelayMessage.Type,
 ): s is "EVENT" | "REQ" | "CLOSE" => supportedC2RMsgNames.includes(s);
 
 type C2RMessage =
@@ -196,7 +191,7 @@ type ParseC2RMessageError =
   | { err: "unsupported"; msgType: string };
 
 const parseC2RMessage = (
-  s: string
+  s: string,
 ): Result<C2RMessage, ParseC2RMessageError> => {
   let parsed: unknown;
   try {

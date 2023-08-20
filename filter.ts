@@ -29,7 +29,7 @@ export const matchEventWithFilter = (ev: NostrEvent, f: Filter): boolean => {
 
 export const matchEventWithFilters = (
   ev: NostrEvent,
-  filters: Filter[]
+  filters: Filter[],
 ): boolean => filters.some((f) => matchEventWithFilter(ev, f));
 
 const matchWithTagQuery = (ev: NostrEvent, f: Filter): boolean => {

@@ -144,7 +144,7 @@ Deno.test("matchEventWithFilter", async (t) => {
       for (const f of filters) {
         assert(!matchEventWithFilter(ev, f), `filter: ${JSON.stringify(f)}`);
       }
-    }
+    },
   );
 
   await t.step("should ignore malformed tag query", () => {
@@ -161,7 +161,7 @@ Deno.test("matchEventWithFilters", async (t) => {
         { "#a": ["a1"] },
         { since: 1630000000 },
         { authors: ["pk1"] }, // matches
-      ])
+      ]),
     );
   });
 
@@ -173,7 +173,7 @@ Deno.test("matchEventWithFilters", async (t) => {
         { "#a": ["a1"] },
         { since: 1630000000 },
         { authors: ["pk2"] },
-      ])
+      ]),
     );
   });
 });
