@@ -1,6 +1,6 @@
 import { Filter } from "./deps.ts";
 import { assert } from "./dev_deps.ts";
-import { matchEventWithFilter, matchEventWithFilters } from "./match_filter.ts";
+import { matchEventWithFilter, matchEventWithFilters } from "./filter.ts";
 
 const ev = {
   id: "id1",

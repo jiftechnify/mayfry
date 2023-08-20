@@ -1,6 +1,7 @@
 import { Filter, ToRelayMessage, verifyEventSignature } from "./deps.ts";
-import { matchEventWithFilters } from "./match_filter.ts";
-import { NostrEvent, Result } from "./types.ts";
+import { NostrEvent, isEphemeralEvent, isNostrEvent } from "./event.ts";
+import { isReqFilter, matchEventWithFilters } from "./filter.ts";
+import { Result } from "./types.ts";
 
 export const launchRelay = async () => {
   const relayServer = new RelayServer();
@@ -74,7 +75,7 @@ class RelaySocket {
     ws.addEventListener("message", (ev: MessageEvent<string>) => {
       const parseRes = parseC2RMessage(ev.data);
       if (!parseRes.isOk) {
-        console.error("failed to parse message from client", parseRes.err);
+        console.error("failed to parse message from client:", ev.data);
 
         let notice: string;
         switch (parseRes.err.err) {
@@ -95,7 +96,7 @@ class RelaySocket {
 
           console.log(`received event from ${this.#remoteAddr}`);
 
-          if (ev.kind < 20000 || 30000 <= ev.kind) {
+          if (!isEphemeralEvent(ev)) {
             this.sendR2CMsg([
               "OK",
               ev.id,
@@ -160,6 +161,7 @@ class RelaySocket {
   }
 }
 
+/* client to relay (C2R) message parsing */
 const c2rMsgNames: ToRelayMessage.Type[] = [
   "EVENT",
   "REQ",
@@ -243,115 +245,14 @@ const parseC2RMessage = (
   }
 };
 
-const regexp32BytesHexStr = /^[a-f0-9]{64}$/;
-const regexp64BytesHexStr = /^[a-f0-9]{128}$/;
-
-const is32BytesHexStr = (s: string): boolean => {
-  return regexp32BytesHexStr.test(s);
-};
-
-const is64BytesHexStr = (s: string): boolean => {
-  return regexp64BytesHexStr.test(s);
-};
-
-// schema validation for Nostr events
-const isNostrEvent = (rawEv: Record<string, unknown>): rawEv is NostrEvent => {
-  // id: 32-bytes lowercase hex-encoded sha256
-  if (
-    !("id" in rawEv) ||
-    typeof rawEv["id"] !== "string" ||
-    !is32BytesHexStr(rawEv["id"])
-  ) {
-    return false;
-  }
-
-  // pubkey: 32-bytes lowercase hex-encoded public key
-  if (
-    !("pubkey" in rawEv) ||
-    typeof rawEv["pubkey"] !== "string" ||
-    !is32BytesHexStr(rawEv["pubkey"])
-  ) {
-    return false;
-  }
-
-  // created_at: unix timestamp in seconds
-  if (!("created_at" in rawEv) || typeof rawEv["created_at"] !== "number") {
-    return false;
-  }
-
-  // kind: integer
-  if (!("kind" in rawEv) || typeof rawEv["kind"] !== "number") {
-    return false;
-  }
-
-  // tags: array of arrays of non-null strings
-  if (!("tags" in rawEv) || !Array.isArray(rawEv["tags"])) {
-    return false;
-  }
-  if (
-    rawEv["tags"].some(
-      (tag) => !Array.isArray(tag) || tag.some((e) => typeof e !== "string")
-    )
-  ) {
-    return false;
-  }
-
-  // content: string
-  if (!("content" in rawEv) || typeof rawEv["content"] !== "string") {
-    return false;
-  }
-
-  // sig: 64-bytes hex of the signature
-  if (
-    !("sig" in rawEv) ||
-    typeof rawEv["sig"] !== "string" ||
-    !is64BytesHexStr(rawEv["sig"])
-  ) {
-    return false;
-  }
-
-  return true;
-};
-
-const isReqFilter = (raw: Record<string, unknown>): raw is Filter => {
-  if ("ids" in raw && !Array.isArray(raw.ids)) {
-    return false;
-  }
-  if ("kinds" in raw && !Array.isArray(raw.kinds)) {
-    return false;
-  }
-  if ("authors" in raw && !Array.isArray(raw.authors)) {
-    return false;
-  }
-  if ("since" in raw && typeof raw.since !== "number") {
-    return false;
-  }
-  if ("until" in raw && typeof raw.until !== "number") {
-    return false;
-  }
-  if ("limit" in raw && typeof raw.limit !== "number") {
-    return false;
-  }
-  if ("search" in raw && typeof raw.search !== "string") {
-    return false;
-  }
-  for (const tqk of Object.keys(raw).filter(
-    (k) => k.startsWith("#") && k.length === 2
-  )) {
-    if (!Array.isArray(raw[tqk])) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
+/* relay to client messages */
 type R2CMessage =
   | [type: "EVENT", subId: string, ev: NostrEvent]
   | [type: "OK", evId: string, accepted: boolean, msg?: string]
   | [type: "EOSE", subId: string]
   | [type: "NOTICE", msg: string];
 
+/* utilities */
 const addrToString = (addr: Deno.Addr): string => {
   switch (addr.transport) {
     case "tcp":
