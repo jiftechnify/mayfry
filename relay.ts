@@ -125,7 +125,7 @@ class RelaySocket {
           }
 
           this.#server.broadcastEvent(this, ev);
-          this.sendR2CMsg(["OK", ev.id, true]);
+          this.sendR2CMsg(["OK", ev.id, true, ""]);
           break;
         }
         case "REQ": {
@@ -252,7 +252,7 @@ const parseC2RMessage = (
 /* relay to client messages */
 type R2CMessage =
   | [type: "EVENT", subId: string, ev: NostrEvent]
-  | [type: "OK", evId: string, accepted: boolean, msg?: string]
+  | [type: "OK", evId: string, accepted: boolean, msg: string]
   | [type: "EOSE", subId: string]
   | [type: "NOTICE", msg: string];
 
